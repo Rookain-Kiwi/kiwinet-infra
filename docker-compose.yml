@@ -1,0 +1,180 @@
+###############################################################################
+# docker-compose.yml — Traefik Reverse Proxy
+# Projet  : Portfolio kiwinet.me
+# VM      : Debian 13.3 ARM AArch64 (Freebox Delta)
+# Image   : traefik:v3 (compatible linux/arm64)
+# SSL     : Let's Encrypt — HTTP Challenge (IP fixe, port 80 ouvert)
+###############################################################################
+
+services:
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # TRAEFIK — Point d'entrée unique HTTP/HTTPS
+  # ─────────────────────────────────────────────────────────────────────────
+  traefik:
+    image: traefik:v3
+    container_name: traefik
+    restart: unless-stopped
+
+    ports:
+      - "80:80"     # HTTP  → redirigé automatiquement vers HTTPS
+                    #         aussi utilisé par Let's Encrypt HTTP Challenge
+      - "443:443"   # HTTPS → trafic SSL principal
+
+    volumes:
+      # Accès lecture seule au socket Docker (découverte automatique des containers)
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Configuration statique (entrypoints, ACME, logs)
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      # Configuration dynamique (middlewares, headers sécurité)
+      - ./traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
+      # Stockage persistant des certificats Let's Encrypt
+      # CRITIQUE : permissions 600 obligatoires (voir guide)
+      - ./traefik/acme.json:/acme.json
+
+    networks:
+      - proxy
+
+    labels:
+      - "traefik.enable=true"
+
+      # ── Dashboard Traefik ───────────────────────────────────────────────
+      # Accessible sur https://traefik.kiwinet.me
+      # Protégé par authentification basique (définie dans dynamic.yml)
+      - "traefik.http.routers.dashboard.rule=Host(`traefik.kiwinet.me`)"
+      - "traefik.http.routers.dashboard.entrypoints=websecure"
+      - "traefik.http.routers.dashboard.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.dashboard.service=api@internal"
+      - "traefik.http.routers.dashboard.middlewares=auth-basic@file"
+
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # FUTURS SERVICES — décommenter au fur et à mesure
+  # Chaque service ajouté obtient automatiquement son certificat Let's Encrypt
+  # ─────────────────────────────────────────────────────────────────────────
+
+  # portfolio:
+  #   image: ghcr.io/rookain/portfolio:latest
+  #   container_name: portfolio
+  #   restart: unless-stopped
+  #   networks:
+  #     - proxy
+  #   labels:
+  #     - "traefik.enable=true"
+  #     - "traefik.http.routers.portfolio.rule=Host(`kiwinet.me`) || Host(`www.kiwinet.me`)"
+  #     - "traefik.http.routers.portfolio.entrypoints=websecure"
+  #     - "traefik.http.routers.portfolio.tls.certresolver=letsencrypt"
+  #     - "traefik.http.services.portfolio.loadbalancer.server.port=80"
+  #     - "traefik.http.routers.portfolio.middlewares=secure-headers"
+
+  # uptime-kuma:
+  #   image: louislam/uptime-kuma:1
+  #   container_name: uptime-kuma
+  #   restart: unless-stopped
+  #   volumes:
+  #     - uptime-kuma-data:/app/data
+  #   networks:
+  #     - proxy
+  #   labels:
+  #     - "traefik.enable=true"
+  #     - "traefik.http.routers.uptime.rule=Host(`status.kiwinet.me`)"
+  #     - "traefik.http.routers.uptime.entrypoints=websecure"
+  #     - "traefik.http.routers.uptime.tls.certresolver=letsencrypt"
+  #     - "traefik.http.services.uptime.loadbalancer.server.port=3001"
+  #     - "traefik.http.routers.uptime.middlewares=secure-headers"
+
+  # grafana:
+  #   image: grafana/grafana:latest
+  #   container_name: grafana
+  #   restart: unless-stopped
+  #   volumes:
+  #     - grafana-data:/var/lib/grafana
+  #   networks:
+  #     - proxy
+  #     - monitoring
+  #   labels:
+  #     - "traefik.enable=true"
+  #     - "traefik.http.routers.grafana.rule=Host(`grafana.kiwinet.me`)"
+  #     - "traefik.http.routers.grafana.entrypoints=websecure"
+  #     - "traefik.http.routers.grafana.tls.certresolver=letsencrypt"
+  #     - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+  #     - "traefik.http.routers.grafana.middlewares=auth-basic,secure-headers"
+
+  # prometheus:
+  #   image: prom/prometheus:latest
+  #   container_name: prometheus
+  #   restart: unless-stopped
+  #   volumes:
+  #     - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+  #     - prometheus-data:/prometheus
+  #   networks:
+  #     - proxy
+  #     - monitoring
+  #   labels:
+  #     - "traefik.enable=true"
+  #     - "traefik.http.routers.prometheus.rule=Host(`prometheus.kiwinet.me`)"
+  #     - "traefik.http.routers.prometheus.entrypoints=websecure"
+  #     - "traefik.http.routers.prometheus.tls.certresolver=letsencrypt"
+  #     - "traefik.http.routers.prometheus.middlewares=auth-basic"
+  #     - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
+
+  # cadvisor:
+  #   image: gcr.io/cadvisor/cadvisor:latest
+  #   container_name: cadvisor
+  #   restart: unless-stopped
+  #   volumes:
+  #     - /:/rootfs:ro
+  #     - /var/run:/var/run:ro
+  #     - /sys:/sys:ro
+  #     - /var/lib/docker/:/var/lib/docker:ro
+  #   networks:
+  #     - monitoring
+
+  # loki:
+  #   image: grafana/loki:latest
+  #   container_name: loki
+  #   restart: unless-stopped
+  #   volumes:
+  #     - loki-data:/loki
+  #   networks:
+  #     - monitoring
+
+  # promtail:
+  #   image: grafana/promtail:latest
+  #   container_name: promtail
+  #   restart: unless-stopped
+  #   volumes:
+  #     - /var/log:/var/log:ro
+  #     - /var/lib/docker/containers:/var/lib/docker/containers:ro
+  #     - /var/run/docker.sock:/var/run/docker.sock:ro
+  #   networks:
+  #     - monitoring
+
+
+###############################################################################
+# RÉSEAUX
+###############################################################################
+
+networks:
+
+  # Réseau frontal — Traefik + tous les services exposés publiquement
+  proxy:
+    name: proxy
+    driver: bridge
+
+  # Réseau interne — stack monitoring, isolé d'internet
+  # monitoring:
+  #   name: monitoring
+  #   driver: bridge
+  #   internal: true
+
+
+###############################################################################
+# VOLUMES — décommenter avec le service correspondant
+###############################################################################
+
+volumes: {}
+  # uptime-kuma-data:
+  # grafana-data:
+  # prometheus-data:
+  # loki-data:

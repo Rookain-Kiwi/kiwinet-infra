@@ -1,0 +1,71 @@
+###############################################################################
+# traefik.yml — Configuration statique
+# Chargé au démarrage — un restart est requis après toute modification.
+###############################################################################
+
+# ─────────────────────────────────────────────────────────────────────────────
+# LOGS
+# ─────────────────────────────────────────────────────────────────────────────
+log:
+  level: INFO   # Passer en DEBUG temporairement si problème de certificat
+
+accessLog: {}   # Log de chaque requête entrante
+
+# ─────────────────────────────────────────────────────────────────────────────
+# API & DASHBOARD
+# ─────────────────────────────────────────────────────────────────────────────
+api:
+  dashboard: true
+  insecure: false   # Dashboard uniquement via HTTPS (géré par les labels)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PROVIDERS
+# ─────────────────────────────────────────────────────────────────────────────
+providers:
+  docker:
+    exposedByDefault: false   # Seuls les containers labelisés traefik.enable=true
+                               # sont pris en compte — sécurité par défaut
+    network: proxy
+
+  file:
+    filename: /etc/traefik/dynamic.yml
+    watch: true               # Rechargement à chaud sans restart
+
+# ─────────────────────────────────────────────────────────────────────────────
+# POINTS D'ENTRÉE
+# ─────────────────────────────────────────────────────────────────────────────
+entryPoints:
+
+  # Port 80 — HTTP entrant
+  # Double rôle : redirection HTTPS + validation HTTP Challenge Let's Encrypt
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+          permanent: true   # 301 — mémorisé par les navigateurs et indexeurs
+
+  # Port 443 — HTTPS, point d'entrée principal
+  websecure:
+    address: ":443"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CERTIFICATS SSL — Let's Encrypt via HTTP Challenge
+#
+# Fonctionnement :
+#   1. Traefik demande un certificat à Let's Encrypt
+#   2. Let's Encrypt envoie une requête HTTP sur port 80 vers kiwinet.me
+#   3. Traefik répond avec un token de validation
+#   4. Certificat émis — valable 90 jours, renouvelé automatiquement
+#
+# Prérequis : port 80 ouvert (ufw + Freebox) et kiwinet.me → ton IP fixe
+# ─────────────────────────────────────────────────────────────────────────────
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      email: "loic.kergoat.business@kiwinet.me"
+      storage: /acme.json
+      httpChallenge:
+        entryPoint: web                # Validation sur le port 80
