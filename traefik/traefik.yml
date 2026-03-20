@@ -1,43 +1,41 @@
-###############################################################################
-# traefik.yml — Configuration statique
-# Chargé au démarrage — un restart est requis après toute modification.
-###############################################################################
+# traefik.yml : Configuration statique
+# Chargé au démarrage. Tout changement nécessite un restart du conteneur.
 
 # ─────────────────────────────────────────────────────────────────────────────
 # LOGS
 # ─────────────────────────────────────────────────────────────────────────────
 log:
-  level: INFO   # Passer en DEBUG temporairement si problème de certificat
+  level: INFO   # Passer en DEBUG pour diagnostiquer les problèmes de certificat
 
-accessLog: {}   # Log de chaque requête entrante
+accessLog: {}   # Active le log de chaque requête entrante
 
 # ─────────────────────────────────────────────────────────────────────────────
 # API & DASHBOARD
 # ─────────────────────────────────────────────────────────────────────────────
 api:
   dashboard: true
-  insecure: false   # Dashboard uniquement via HTTPS (géré par les labels)
+  insecure: false   # Accès au dashboard uniquement via HTTPS (router défini dans dynamic.yml)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # PROVIDERS
 # ─────────────────────────────────────────────────────────────────────────────
 providers:
   docker:
-    exposedByDefault: false   # Seuls les containers labelisés traefik.enable=true
-                               # sont pris en compte — sécurité par défaut
+    # Seuls les conteneurs avec le label traefik.enable=true sont exposés
+    exposedByDefault: false
     network: proxy
 
   file:
     filename: /etc/traefik/dynamic.yml
-    watch: true               # Rechargement à chaud sans restart
+    watch: true   # Rechargement à chaud sans restart
 
 # ─────────────────────────────────────────────────────────────────────────────
 # POINTS D'ENTRÉE
 # ─────────────────────────────────────────────────────────────────────────────
 entryPoints:
 
-  # Port 80 — HTTP entrant
-  # Double rôle : redirection HTTPS + validation HTTP Challenge Let's Encrypt
+  # Port 80 — HTTP
+  # Redirige tout le trafic vers HTTPS et sert de point de validation ACME
   web:
     address: ":80"
     http:
@@ -45,22 +43,23 @@ entryPoints:
         entryPoint:
           to: websecure
           scheme: https
-          permanent: true   # 301 — mémorisé par les navigateurs et indexeurs
+          permanent: true   # Redirection 301, mise en cache par les navigateurs
 
   # Port 443 — HTTPS, point d'entrée principal
   websecure:
     address: ":443"
 
 # ─────────────────────────────────────────────────────────────────────────────
-# CERTIFICATS SSL — Let's Encrypt via HTTP Challenge
+# CERTIFICATS SSL — Let's Encrypt (HTTP Challenge)
 #
-# Fonctionnement :
-#   1. Traefik demande un certificat à Let's Encrypt
-#   2. Let's Encrypt envoie une requête HTTP sur port 80 vers kiwinet.me
-#   3. Traefik répond avec un token de validation
-#   4. Certificat émis — valable 90 jours, renouvelé automatiquement
+# Flux de validation :
+#   1. Traefik soumet une demande de certificat à Let's Encrypt
+#   2. Let's Encrypt envoie une requête HTTP sur le port 80 de kiwinet.me
+#   3. Traefik répond avec le token de validation
+#   4. Certificat émis, valable 90 jours, renouvelé automatiquement
 #
-# Prérequis : port 80 ouvert (ufw + Freebox) et kiwinet.me → ton IP fixe
+# Prérequis : port 80 accessible depuis Internet (pare-feu + box) et
+#             kiwinet.me pointant sur l'IP publique fixe
 # ─────────────────────────────────────────────────────────────────────────────
 certificatesResolvers:
   letsencrypt:
@@ -68,4 +67,4 @@ certificatesResolvers:
       email: "loic.kergoat.business@kiwinet.me"
       storage: /acme.json
       httpChallenge:
-        entryPoint: web                # Validation sur le port 80
+        entryPoint: web   # Validation via le port 80

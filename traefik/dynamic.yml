@@ -1,34 +1,20 @@
-###############################################################################
-# dynamic.yml — Configuration dynamique
-# Rechargé à chaud par Traefik — aucun restart requis.
-###############################################################################
+# dynamic.yml : Configuration dynamique Traefik
+# Ce fichier est rechargé à chaud, aucun redémarrage requis.
 
 http:
   middlewares:
 
-    # ─────────────────────────────────────────────────────────────────────
-    # AUTH BASIQUE — Protection des interfaces internes
-    # Utilisé sur : dashboard Traefik, Prometheus, Grafana
-    #
-    # Générer le hash sur la VM :
-    #   sudo apt install apache2-utils
-    #   htpasswd -nb rookain MON_MOT_DE_PASSE
-    #
-    # ⚠️  Dans ce fichier YAML, chaque $ doit être doublé en $$
-    #     Exemple : $apr1$abc → $$apr1$$abc
-    # ─────────────────────────────────────────────────────────────────────
+    # Protection : dashboard Traefik, Prometheus, Grafana.
+    # Générer un hash : htpasswd -nb <user> <password>
     auth-basic:
       basicAuth:
         users:
           - "rookain:$apr1$9IyBjbhP$10RRWUX7uBagQac8ZDv5X/"
 
-    # ─────────────────────────────────────────────────────────────────────
-    # HEADERS DE SÉCURITÉ — Services exposés publiquement
-    # Appliquer sur : portfolio, uptime-kuma
-    # ─────────────────────────────────────────────────────────────────────
+    # Headers de sécurité HTTP pour les services exposés publiquement.
     secure-headers:
       headers:
-        stsSeconds: 31536000          # HSTS 1 an — force HTTPS
+        stsSeconds: 31536000          # HSTS 1 an
         stsIncludeSubdomains: true
         stsPreload: true
         frameDeny: true               # Anti-clickjacking
@@ -36,12 +22,10 @@ http:
         browserXssFilter: true
         referrerPolicy: "strict-origin-when-cross-origin"
         customResponseHeaders:
-          X-Powered-By: ""            # Ne pas révéler la stack technique
+          X-Powered-By: ""            # Masquer la stack technique
           Server: ""
 
-    # ─────────────────────────────────────────────────────────────────────
-    # RATE LIMITING — Anti-abus sur les endpoints publics
-    # ─────────────────────────────────────────────────────────────────────
+    # Limitation de débit pour les endpoints publics.
     rate-limit:
       rateLimit:
         average: 100
