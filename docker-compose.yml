@@ -1,15 +1,15 @@
 ###############################################################################
-# docker-compose.yml — Traefik Reverse Proxy
+# docker-compose.yml : Traefik Reverse Proxy
 # Projet  : kiwinet.me
 # VM      : Debian 13.3 ARM AArch64 (Freebox Delta)
 # Image   : traefik:v3 (compatible linux/arm64)
-# SSL     : Let's Encrypt — HTTP Challenge (IP fixe, port 80 ouvert)
+# SSL     : Let's Encrypt : HTTP Challenge (IP fixe, port 80 ouvert)
 ###############################################################################
 
 services:
 
   # ───────────────────────────────────────────────────────────────────────────
-  # TRAEFIK — Point d'entrée unique HTTP/HTTPS
+  # TRAEFIK : Point d'entrée unique HTTP/HTTPS
   # ───────────────────────────────────────────────────────────────────────────
   traefik:
     image: traefik:v3
@@ -52,7 +52,7 @@ services:
 # ─────────────────────────────────────────────────────────────────────────────
 networks:
 
-  # Réseau frontal — Traefik + tous les services exposés publiquement via HTTPS
+  # Réseau frontal : Traefik + tous les services exposés publiquement via HTTPS
   proxy:
     name: proxy
     driver: bridge

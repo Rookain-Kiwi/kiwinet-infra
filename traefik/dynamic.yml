@@ -5,7 +5,6 @@ http:
   middlewares:
 
     # Protection : dashboard Traefik, Prometheus, Grafana.
-    # Générer un hash : htpasswd -nb <user> <password>
     auth-basic:
       basicAuth:
         users:

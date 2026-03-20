@@ -34,7 +34,7 @@ providers:
 # ─────────────────────────────────────────────────────────────────────────────
 entryPoints:
 
-  # Port 80 — HTTP
+  # Port 80 : HTTP
   # Redirige tout le trafic vers HTTPS et sert de point de validation ACME
   web:
     address: ":80"
@@ -45,12 +45,12 @@ entryPoints:
           scheme: https
           permanent: true   # Redirection 301, mise en cache par les navigateurs
 
-  # Port 443 — HTTPS, point d'entrée principal
+  # Port 443 : HTTPS, point d'entrée principal
   websecure:
     address: ":443"
 
 # ─────────────────────────────────────────────────────────────────────────────
-# CERTIFICATS SSL — Let's Encrypt (HTTP Challenge)
+# CERTIFICATS SSL : Let's Encrypt (HTTP Challenge)
 #
 # Flux de validation :
 #   1. Traefik soumet une demande de certificat à Let's Encrypt
