@@ -22,14 +22,9 @@ services:
       - "443:443"   # HTTPS → trafic SSL principal
 
     volumes:
-      # Accès lecture seule au socket Docker (découverte automatique des containers)
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      # Configuration statique (entrypoints, ACME, logs)
       - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
-      # Configuration dynamique (middlewares, headers sécurité)
       - ./traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
-      # Stockage persistant des certificats Let's Encrypt
-      # CRITIQUE : permissions 600 obligatoires (voir guide)
       - ./traefik/acme.json:/acme.json
 
     networks:
@@ -37,22 +32,33 @@ services:
 
     labels:
       - "traefik.enable=true"
-
-      # ── Dashboard Traefik ──────────────────────────────────────────────────
-      # Accessible sur https://traefik.kiwinet.me
-      # Protégé par authentification basique (définie dans dynamic.yml)
       - "traefik.http.routers.dashboard.rule=Host(`traefik.kiwinet.me`)"
       - "traefik.http.routers.dashboard.entrypoints=websecure"
       - "traefik.http.routers.dashboard.tls.certresolver=letsencrypt"
       - "traefik.http.routers.dashboard.service=api@internal"
       - "traefik.http.routers.dashboard.middlewares=auth-basic@file"
 
+  # ───────────────────────────────────────────────────────────────────────────
+  # KIWINET-WEB : Site principal kiwinet.me
+  # ───────────────────────────────────────────────────────────────────────────
+  kiwinet-web:
+    image: ghcr.io/rookain-kiwi/kiwinet-web:latest
+    container_name: kiwinet-web
+    restart: unless-stopped
+    networks:
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.kiwinet-web.rule=Host(`kiwinet.me`) || Host(`www.kiwinet.me`)"
+      - "traefik.http.routers.kiwinet-web.entrypoints=websecure"
+      - "traefik.http.routers.kiwinet-web.tls.certresolver=letsencrypt"
+      - "traefik.http.services.kiwinet-web.loadbalancer.server.port=80"
+      - "traefik.http.routers.kiwinet-web.middlewares=secure-headers@file"
+
 # ─────────────────────────────────────────────────────────────────────────────
 # RÉSEAUX
 # ─────────────────────────────────────────────────────────────────────────────
 networks:
-
-  # Réseau frontal : Traefik + tous les services exposés publiquement via HTTPS
   proxy:
     name: proxy
     driver: bridge
