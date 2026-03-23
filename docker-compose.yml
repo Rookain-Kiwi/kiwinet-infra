@@ -65,7 +65,7 @@ services:
     environment:
       SERVER_PORT: "2333"
       LAVALINK_SERVER_PASSWORD: ${LAVALINK_PASSWORD}
-      _JAVA_OPTIONS: "-XX:+UseZGC -XX:+ZGenerational -Xms256m -Xmx512m"
+      _JAVA_OPTIONS: "-XX:+UseZGC -Xms256m -Xmx512m"
     volumes:
       - ./plexbot/lavalink.yml:/opt/Lavalink/application.yml:ro
       - lavalink-logs:/opt/Lavalink/logs
