@@ -28,8 +28,8 @@ lavalink:
       rotation: false
       channelMix: false
       lowPass: false
-    bufferDurationMs: 400
-    frameBufferDurationMs: 5000
+    bufferDurationMs: 1200
+    frameBufferDurationMs: 15000
     opusEncodingQuality: 10
     resamplingQuality: LOW
     trackStuckThresholdMs: 10000
