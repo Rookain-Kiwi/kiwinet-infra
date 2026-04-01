@@ -27,6 +27,7 @@ services:
       - TZ=Europe/Paris
     volumes:
       - ./config:/config
+      - /mnt/Data/ha-backups:/config/backups
       - /etc/localtime:/etc/localtime:ro
     healthcheck:
       test: ["CMD-SHELL", "curl -fSs http://localhost:8123 || exit 1"]
