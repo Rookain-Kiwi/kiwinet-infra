@@ -1,0 +1,54 @@
+###############################################################################
+# plex/docker-compose.yml : Serveur Plex Media Server
+# Projet  : kiwinet.me
+# VM      : Debian 13.3 ARM AArch64 (Freebox Delta)
+# Image   : plexinc/pms-docker (officielle, compatible linux/arm64)
+# Accès   : plex.kiwinet.me (HTTPS via Traefik) + port 32400 natif
+###############################################################################
+services:
+  # ───────────────────────────────────────────────────────────────────────────
+  # PLEX : Media Server avec bibliothèques sur NAS Freebox (CIFS)
+  # Données conservées depuis l'installation native (/var/lib/plexmediaserver)
+  # ───────────────────────────────────────────────────────────────────────────
+  plex:
+    image: plexinc/pms-docker:latest
+    container_name: plex
+    restart: unless-stopped
+    environment:
+      TZ: "Europe/Paris"
+      # Token de claim — générer sur https://plex.tv/claim (valable 4 min)
+      # Nécessaire uniquement au premier démarrage pour lier au compte Plex.tv
+      PLEX_CLAIM: ${PLEX_CLAIM}
+      # UID/GID correspondant à l'utilisateur plex natif (uid=994, gid=991)
+      PUID: "994"
+      PGID: "991"
+    volumes:
+      # Données Plex : base de données, métadonnées, config — bind mount direct
+      - /var/lib/plexmediaserver:/config
+      # Médias sur NAS Freebox (montages CIFS persistants via /etc/fstab)
+      - /mnt/Kodi/Films:/media/films:ro
+      - /mnt/Kodi/Séries TV:/media/series:ro
+      - /mnt/Kodi/Musique:/media/musique:ro
+      # Transcodage temporaire en RAM
+      - /tmp/plex-transcode:/transcode
+    networks:
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.plex.rule=Host(`plex.kiwinet.me`)"
+      - "traefik.http.routers.plex.entrypoints=websecure"
+      - "traefik.http.routers.plex.tls.certresolver=letsencrypt"
+      - "traefik.http.services.plex.loadbalancer.server.port=32400"
+      - "traefik.http.routers.plex.middlewares=secure-headers@file"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# RÉSEAUX
+# ─────────────────────────────────────────────────────────────────────────────
+networks:
+  proxy:
+    external: true
+
+# ─────────────────────────────────────────────────────────────────────────────
+# VOLUMES
+# ─────────────────────────────────────────────────────────────────────────────
+volumes: {}
