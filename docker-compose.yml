@@ -121,8 +121,9 @@ services:
     environment:
       # Acceptation EULA Mojang — obligatoire
       EULA: "TRUE"
-      # Serveur PaperMC : compatible vanilla client, supporte les plugins Bukkit/Spigot/Paper
-      TYPE: "PAPER"
+      # Vanilla le temps que PaperMC supporte la version 26.1
+      # Repasser en TYPE: "PAPER" dès que Paper publie le support 26.1
+      TYPE: "VANILLA"
       VERSION: "26.1"
       MEMORY: "4G"
       TZ: "Europe/Paris"
