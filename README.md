@@ -1,15 +1,15 @@
 # kiwinet-infra
 
-Configuration de l'infrastructure centrale de `kiwinet.me`.  
+Configuration de l'infrastructure centrale de `Kiwinet`.  
 Reverse proxy Traefik, services applicatifs, domotique — un compose par service.
 
 ---
 
 ## Rôle de ce repo
 
-Ce repo centralise la configuration de tous les services auto-hébergés sur la VM `kiwinet.me`. Chaque service est isolé dans son propre sous-dossier avec son `docker-compose.yml`.
+Ce repo centralise la configuration de tous les services auto-hébergés sur la VM `Kiwinet`. Chaque service est isolé dans son propre sous-dossier avec son `docker-compose.yml`.
 
-Il fait partie d'un ensemble de quatre repos qui constituent l'infrastructure de `kiwinet.me` :
+Il fait partie d'un ensemble de quatre repos qui constituent l'infrastructure de `Kiwinet` :
 
 | Repo                 | Rôle                                  | URL déployée         |
 |----------------------|---------------------------------------|----------------------|
