@@ -2,7 +2,7 @@
 # ha/docker-compose.yml : Home Assistant + Mosquitto MQTT
 # Projet  : kiwinet-infra / ha
 # VM      : Debian 13 ARM AArch64 (Freebox Delta)
-# Accès   : https://ha.kiwinet.me (via Traefik → traefik/dynamic.yml)
+# Accès   : https://hub.kiwinet.me (via Traefik → traefik/dynamic.yml)
 ###############################################################################
 
 services:
@@ -29,6 +29,7 @@ services:
       - ./config:/config
       - /mnt/Data/ha-backups:/config/backups
       - /etc/localtime:/etc/localtime:ro
+    # Santé vérifiée via curl — start_period élevé car HA met ~60s à initialiser complètement
     healthcheck:
       test: ["CMD-SHELL", "curl -fSs http://localhost:8123 || exit 1"]
       interval: 30s

@@ -46,6 +46,7 @@ services:
     networks:
       - proxy
     labels:
+      # HTTP Traefik désactivé — le routage Minecraft passe par TCP passthrough (traefik/dynamic.yml)
       - "traefik.enable=false"
 
 # ─────────────────────────────────────────────────────────────────────────────

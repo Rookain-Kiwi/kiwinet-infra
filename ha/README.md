@@ -11,7 +11,7 @@ Domotique locale intégrée à la stack kiwinet-infra.
 
 ## Accès
 
-- Interface web : **https://ha.kiwinet.me** (via Traefik)
+- Interface web : **https://hub.kiwinet.me** (via Traefik)
 - MQTT : `<IP_VM>:1883` (LAN uniquement)
 
 ## Architecture réseau
@@ -51,7 +51,7 @@ http:
     - 172.18.0.0/16   # Réseau proxy Traefik
 ```
 
-4. Redémarrer HA — `ha.kiwinet.me` est alors pleinement fonctionnel
+4. Redémarrer HA — `hub.kiwinet.me` est alors pleinement fonctionnel
 
 ## Structure
 

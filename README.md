@@ -1,7 +1,7 @@
 # kiwinet-infra
 
 Configuration de l'infrastructure centrale de `kiwinet.me`.  
-Reverse proxy Traefik, services applicatifs, domotique et bot Discord — un compose par service.
+Reverse proxy Traefik, services applicatifs, domotique — un compose par service.
 
 ---
 
@@ -26,21 +26,22 @@ Il fait partie d'un ensemble de quatre repos qui constituent l'infrastructure de
 Internet
     │
     ▼
-82.67.126.108 (IP fixe)
+<IP_PUBLIQUE> (fixe)
     │
     ├── :80   → Freebox → VM → Traefik  (HTTP Challenge Let's Encrypt + redirection HTTPS)
     ├── :443  → Freebox → VM → Traefik
     │               │
     │               ├── kiwinet.me / www.kiwinet.me  → kiwinet-web (CI/CD auto)
     │               ├── traefik.kiwinet.me           → dashboard Traefik (auth-basic)
-    │               ├── plex.kiwinet.me              → Plex natif VM:32400
-    │               ├── ha.kiwinet.me                → Home Assistant (network_mode: host)
+    │               ├── plex.kiwinet.me              → Plex (container Docker, réseau proxy)
+    │               ├── hub.kiwinet.me               → Home Assistant (network_mode: host)
     │               ├── status.kiwinet.me            → Uptime Kuma (kiwinet-status)
     │               └── grafana.kiwinet.me           → Grafana (kiwinet-monitoring)
     │
     ├── :22    → SSH (hors Docker)
     ├── :25565 → Minecraft (TCP brut via Traefik passthrough)
-    └── :1883  → Mosquitto MQTT (LAN uniquement)
+    ├── :1883  → Mosquitto MQTT (LAN uniquement)
+    └── :22121 → WireGuard VPN (accès réseau local, natif VM)
 ```
 
 **Réseaux Docker :**
@@ -57,16 +58,13 @@ kiwinet-infra/
 │   ├── docker-compose.yml
 │   ├── traefik.yml             ← Config statique (restart requis si modifié)
 │   ├── dynamic.yml             ← Config dynamique (routers, services, middlewares)
-│   └── acme.json               ← Certificats Let's Encrypt (chmod 600, gitignored)
+│   ├── acme.json               ← Certificats Let's Encrypt (chmod 600, gitignored)
+│   └── .htpasswd               ← Identifiants basic auth (gitignored)
 ├── minecraft/                  ← Serveur Minecraft Java Edition
 │   ├── docker-compose.yml
 │   └── .env                    ← RCON_PASSWORD (gitignored)
-├── plexbot/                    ← Bot Discord + moteur audio Lavalink
-│   ├── docker-compose.yml
-│   ├── lavalink.yml
-│   ├── config.fds
-│   ├── .env                    ← Tokens Discord/Plex/Lavalink (gitignored)
-│   └── .env.example            ← Template vide commité
+├── plex/                       ← Plex Media Server
+│   └── docker-compose.yml
 └── ha/                         ← Home Assistant + Mosquitto MQTT
     ├── docker-compose.yml
     ├── mosquitto/config/mosquitto.conf
@@ -85,7 +83,7 @@ cd traefik && docker compose up -d
 
 # Puis les services dans n'importe quel ordre
 cd minecraft && docker compose up -d
-cd plexbot   && docker compose up -d
+cd plex      && docker compose up -d
 cd ha        && docker compose up -d
 ```
 
@@ -133,7 +131,7 @@ Un certificat wildcard (`*.kiwinet.me`) aurait nécessité un DNS Challenge — 
 | `kiwinet.me` + `www`  | Automatique (Traefik)             |
 | `traefik.kiwinet.me`  | Automatique (Traefik)             |
 | `plex.kiwinet.me`     | Automatique (Traefik)             |
-| `ha.kiwinet.me`       | Automatique (Traefik)             |
+| `hub.kiwinet.me`      | Automatique (Traefik)             |
 | `status.kiwinet.me`   | Automatique (Traefik)             |
 | `grafana.kiwinet.me`  | Automatique (Traefik)             |
 | `freebox.kiwinet.me`  | Manuel — Certbot, échéance 15/06/2026 |
@@ -212,7 +210,7 @@ chmod 600 acme.json && docker compose up -d
 | RAM            | 12 Go                                           |
 | Virtualisation | QEMU / VirtIO (Freebox Delta)                   |
 | Domaine        | `kiwinet.me` — DNS géré chez Bluehost           |
-| IP publique    | `82.67.126.108` (fixe)                          |
+| IP publique    | Fixe (voir configuration Freebox)               |
 
 ## Ports UFW ouverts
 
@@ -223,4 +221,4 @@ chmod 600 acme.json && docker compose up -d
 | 443   | TCP       | HTTPS                                         |
 | 25565 | TCP       | Minecraft (passthrough Traefik)               |
 | 1883  | TCP       | Mosquitto MQTT (LAN uniquement)               |
-| 32400 | TCP       | Plex (natif VM)                               |
+| 22121 | UDP       | WireGuard VPN (accès réseau local, natif VM)  |

@@ -8,6 +8,9 @@
 # Certificats Let's Encrypt — régénérés automatiquement par Traefik
 traefik/acme.json
 
+# Identifiants basic auth — générer avec : htpasswd -nB <utilisateur> >> traefik/.htpasswd
+traefik/.htpasswd
+
 # ── Home Assistant ────────────────────────────────────────────────────────────
 # Données HA persistantes — volumineuses et contiennent des secrets
 ha/config/

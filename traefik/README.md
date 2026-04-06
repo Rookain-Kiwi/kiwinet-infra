@@ -71,8 +71,8 @@ Rechargée à chaud (`watch: true`) — en théorie. En pratique, un `docker res
 
 Contient :
 - **Middlewares** : `auth-basic`, `secure-headers`, `rate-limit`, `ha-forwardproto`
-- **Routers** : Plex, Home Assistant (services en `network_mode: host` ou natifs VM)
-- **Services** : upstream vers `172.18.0.1` (gateway réseau `proxy`)
+- **Routers** : Home Assistant uniquement — les autres services (Plex, Minecraft…) utilisent des labels Docker ou le TCP passthrough
+- **Services** : upstream vers `172.18.0.1` (gateway réseau `proxy`) pour les services en `network_mode: host`
 
 ---
 
@@ -96,6 +96,19 @@ Fichier critique — contient les clés privées des certificats TLS pour tous l
 chmod 600 traefik/acme.json
 
 # Ne jamais committer (vérifié dans .gitignore)
+```
+
+## .htpasswd
+
+Contient les identifiants hashés pour le middleware `auth-basic` (dashboard Traefik).  
+Gitignored — à créer manuellement sur la VM avant le premier démarrage.
+
+```bash
+# Créer le fichier et ajouter un utilisateur (bcrypt)
+htpasswd -nB <utilisateur> >> traefik/.htpasswd
+
+# Vérifier les permissions
+chmod 600 traefik/.htpasswd
 ```
 
 En cas d'échec ACME (rate limit, NXDOMAIN), supprimer l'entrée défaillante avant de relancer :
@@ -124,12 +137,12 @@ chmod 600 acme.json && docker compose up -d
 
 ## Routing natif VM
 
-Pour les services qui tournent hors Docker (Plex) ou en `network_mode: host` (Home Assistant), l'upstream doit utiliser l'IP gateway du réseau `proxy` :
+Pour les services en `network_mode: host` (Home Assistant) ou tournant nativement sur la VM, l'upstream doit utiliser l'IP gateway du réseau `proxy` :
 
 ```yaml
 # Ne fonctionne pas depuis un container
-url: "http://127.0.0.1:32400"
+url: "http://127.0.0.1:8123"
 
 # Correct — vérifier avec : docker network inspect proxy | grep Gateway
-url: "http://172.18.0.1:32400"
+url: "http://172.18.0.1:8123"
 ```

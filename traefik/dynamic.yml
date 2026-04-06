@@ -1,14 +1,18 @@
 # traefik/dynamic.yml : Configuration dynamique Traefik
 # Ce fichier est rechargé à chaud, aucun redémarrage requis.
 
+# ─────────────────────────────────────────────────────────────────────────────
+# HTTP : Middlewares, routers et services HTTP/HTTPS
+# ─────────────────────────────────────────────────────────────────────────────
 http:
   middlewares:
 
     # Protection : dashboard Traefik, Prometheus, Grafana.
+    # Identifiants stockés dans .htpasswd (gitignored) — générer avec :
+    #   htpasswd -nB <utilisateur> >> traefik/.htpasswd
     auth-basic:
       basicAuth:
-        users:
-          - "rookain:$apr1$9IyBjbhP$10RRWUX7uBagQac8ZDv5X/"
+        usersFile: /etc/traefik/.htpasswd
 
     # Headers de sécurité HTTP pour les services exposés publiquement.
     secure-headers:
@@ -40,17 +44,9 @@ http:
 
   routers:
 
-    # Plex Media Server : accès public via HTTPS.
-    plex:
-      rule: "Host(`plex.kiwinet.me`)"
-      entryPoints:
-        - websecure
-      service: plex
-      tls:
-        certResolver: letsencrypt
-
     # Home Assistant : domotique locale exposée via HTTPS.
-    # HA tourne en network_mode: host → même pattern que Plex
+    # HA tourne en network_mode: host — labels Docker non fonctionnels en mode host,
+    # la route est donc déclarée ici manuellement.
     # ⚠️  Vérifier l'IP : docker network inspect proxy | grep Gateway
     homeassistant:
       rule: "Host(`hub.kiwinet.me`)"
@@ -64,12 +60,6 @@ http:
         - ha-forwardproto
 
   services:
-
-    # Plex tourne en local : Traefik fait office de reverse proxy TLS.
-    plex:
-      loadBalancer:
-        servers:
-          - url: "http://172.17.0.1:32400"
 
     # Home Assistant en network_mode: host
     # 172.18.0.1 = gateway réseau proxy = IP VM vue depuis Traefik

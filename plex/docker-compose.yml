@@ -3,7 +3,7 @@
 # Projet  : kiwinet.me
 # VM      : Debian 13.3 ARM AArch64 (Freebox Delta)
 # Image   : plexinc/pms-docker (officielle, compatible linux/arm64)
-# Accès   : plex.kiwinet.me (HTTPS via Traefik) + port 32400 natif
+# Accès   : plex.kiwinet.me (HTTPS via Traefik → port 32400 interne, non exposé publiquement)
 ###############################################################################
 services:
   # ───────────────────────────────────────────────────────────────────────────
@@ -34,6 +34,8 @@ services:
     networks:
       - proxy
     labels:
+      # Exposition HTTPS via Traefik : certificat Let's Encrypt + middleware secure-headers
+      # Le port interne 32400 est résolu par le label loadbalancer.server.port
       - "traefik.enable=true"
       - "traefik.http.routers.plex.rule=Host(`plex.kiwinet.me`)"
       - "traefik.http.routers.plex.entrypoints=websecure"
@@ -50,5 +52,6 @@ networks:
 
 # ─────────────────────────────────────────────────────────────────────────────
 # VOLUMES
+# Plex utilise uniquement des bind mounts — aucun volume nommé nécessaire
 # ─────────────────────────────────────────────────────────────────────────────
 volumes: {}

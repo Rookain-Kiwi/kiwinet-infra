@@ -22,15 +22,17 @@ services:
       - "25565:25565" # TCP → Minecraft Java Edition (passthrough)
 
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./traefik.yml:/etc/traefik/traefik.yml:ro
-      - ./dynamic.yml:/etc/traefik/dynamic.yml:ro
-      - ./acme.json:/acme.json
+      - /var/run/docker.sock:/var/run/docker.sock:ro  # API Docker — découverte automatique des services
+      - ./traefik.yml:/etc/traefik/traefik.yml:ro     # Config statique — requiert restart si modifiée
+      - ./dynamic.yml:/etc/traefik/dynamic.yml:ro     # Config dynamique — rechargée à chaud
+      - ./acme.json:/acme.json                         # Stockage des certificats Let's Encrypt
+      - ./.htpasswd:/etc/traefik/.htpasswd:ro          # Identifiants basic auth (gitignored)
 
     networks:
       - proxy
 
     labels:
+      # Route du dashboard Traefik — protégée par basic auth (auth-basic@file dans dynamic.yml)
       - "traefik.enable=true"
       - "traefik.http.routers.dashboard.rule=Host(`traefik.kiwinet.me`)"
       - "traefik.http.routers.dashboard.entrypoints=websecure"
