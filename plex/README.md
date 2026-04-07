@@ -1,28 +1,28 @@
 # plex — Plex Media Server
 
-Serveur multimédia auto-hébergé, dockerisé avec l'image officielle `plexinc/pms-docker`.  
-Accessible via `plex.kiwinet.me` (HTTPS via Traefik → port interne 32400, non exposé publiquement).
+Serveur multimédia dockerisé. Accessible via `plex.kiwinet.me`.
+
+> Contexte global : [kiwinet-docs](https://github.com/Rookain-Kiwi/kiwinet-docs)
 
 ---
 
 ## Stack
 
-| Container | Image                    | Rôle                       |
-|-----------|--------------------------|----------------------------|
-| `plex`    | `plexinc/pms-docker`     | Serveur Plex Media Server  |
+| Container | Image                | Port interne |
+|-----------|----------------------|--------------|
+| `plex`    | `plexinc/pms-docker` | 32400        |
 
 ---
 
 ## Configuration
 
-| Paramètre         | Valeur                                          |
-|-------------------|-------------------------------------------------|
-| Architecture      | ARM AArch64 (Freebox Delta)                     |
-| Timezone          | Europe/Paris                                    |
-| PUID / PGID       | 994 / 991 (utilisateur `plex` natif de la VM)  |
-| Port interne      | 32400 (non exposé directement)                  |
-| Transcodage       | `/tmp/plex-transcode` (RAM)                     |
-| Données config    | `/var/lib/plexmediaserver` (bind mount)         |
+| Paramètre      | Valeur                                  |
+|----------------|-----------------------------------------|
+| Architecture   | ARM AArch64                             |
+| Timezone       | Europe/Paris                            |
+| PUID / PGID    | 994 / 991 (utilisateur `plex` VM)       |
+| Transcodage    | `/tmp/plex-transcode` (RAM)             |
+| Données config | `/var/lib/plexmediaserver` (bind mount) |
 
 ---
 
@@ -31,46 +31,12 @@ Accessible via `plex.kiwinet.me` (HTTPS via Traefik → port interne 32400, non 
 ```
 plex/
 ├── docker-compose.yml
-└── .env                ← PLEX_CLAIM (gitignored)
-```
-
-Les données Plex (base de données, métadonnées, config) sont conservées depuis l'installation native dans `/var/lib/plexmediaserver` — elles persistent entre les recreations du container.
-
----
-
-## Médias
-
-Les bibliothèques sont montées en lecture seule depuis le NAS Freebox (montages CIFS persistants via `/etc/fstab`) :
-
-| Point de montage       | Contenu      |
-|------------------------|--------------|
-| `/mnt/Kodi/Films`      | Films        |
-| `/mnt/Kodi/Séries TV`  | Séries TV    |
-| `/mnt/Kodi/Musique`    | Musique      |
-
----
-
-## Déploiement
-
-```bash
-cd /opt/kiwinet-infra/plex
-
-# Premier démarrage (PLEX_CLAIM requis)
-docker compose up -d
-
-# Logs en temps réel
-docker compose logs -f
-
-# Mise à jour image
-docker compose pull && docker compose up -d --force-recreate
+└── .env                # PLEX_CLAIM (gitignored)
 ```
 
 ---
 
-## Premier démarrage
-
-1. Générer un token sur `https://plex.tv/claim` (valable 4 minutes)
-2. Renseigner le token dans `.env` :
+## Fichier `.env` à créer
 
 ```bash
 cat > .env << 'EOF'
@@ -78,32 +44,24 @@ PLEX_CLAIM=claim-XXXXXXXXXXXXXXXX
 EOF
 ```
 
-3. Lancer le container — Plex se lie automatiquement au compte Plex.tv via le token
-4. Une fois lié, le token n'est plus nécessaire — le container peut être relancé sans `PLEX_CLAIM`
+Le token se génère sur `https://plex.tv/claim` (valable 4 minutes). Requis uniquement au premier démarrage — le container peut ensuite être relancé sans `PLEX_CLAIM`.
 
 ---
 
-## Routing réseau
+## Déploiement
 
-Plex utilise les labels Docker pour s'exposer via Traefik :
+```bash
+cd /opt/kiwinet-services/plex
 
+docker compose up -d
+docker compose logs -f
+
+# Mise à jour
+docker compose pull && docker compose up -d --force-recreate
 ```
-Client → plex.kiwinet.me:443 → Traefik HTTPS → container plex:32400
-```
-
-Le port 32400 n'est pas exposé directement sur la VM — tout passe par Traefik avec certificat Let's Encrypt et middleware `secure-headers`.
 
 ---
 
-## Variables d'environnement
+## Médias
 
-| Variable      | Description                                                      |
-|---------------|------------------------------------------------------------------|
-| `PLEX_CLAIM`  | Token de claim Plex.tv — requis uniquement au premier démarrage |
-
----
-
-## Intégration Home Assistant
-
-Plex est intégré à Home Assistant via `hub.kiwinet.me`.  
-L'intégration remonte l'état de lecture en temps réel (film en cours, utilisateur actif, etc.).
+Bibliothèques montées en lecture seule depuis le NAS Freebox via CIFS (`/etc/fstab`). Les points de montage sont définis dans le `docker-compose.yml`.

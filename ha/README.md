@@ -1,48 +1,51 @@
-# ha — Home Assistant
+# ha — Home Assistant + Mosquitto
 
-Domotique locale intégrée à la stack kiwinet-infra.
+Domotique locale. Accessible via `hub.kiwinet.me`.
+
+> Contexte global : [kiwinet-docs](https://github.com/Rookain-Kiwi/kiwinet-docs)
+
+---
 
 ## Stack
 
-| Conteneur       | Rôle                        | Réseau               |
-|-----------------|-----------------------------|----------------------|
-| `homeassistant` | Serveur domotique principal | `host` (mDNS requis) |
-| `mosquitto`     | Broker MQTT local           | `proxy`              |
+| Container       | Réseau  | Rôle              |
+|-----------------|---------|-------------------|
+| `homeassistant` | `host`  | Serveur domotique |
+| `mosquitto`     | `proxy` | Broker MQTT local |
 
-## Accès
+---
 
-- Interface web : **https://hub.kiwinet.me** (via Traefik)
-- MQTT : `<IP_VM>:1883` (LAN uniquement)
+## Structure
 
-## Architecture réseau
+```
+ha/
+├── docker-compose.yml
+├── mosquitto/config/mosquitto.conf
+└── config/             # Données HA (gitignored)
+```
 
-HA tourne en `network_mode: host` — obligatoire pour la découverte mDNS
-des appareils Google Cast, Chromecast et Nest sur le LAN.
-
-La route Traefik est déclarée manuellement dans `../traefik/dynamic.yml`
-(même pattern que Plex), car les labels Docker ne fonctionnent pas en mode host.
+---
 
 ## Déploiement
 
 ```bash
-# Depuis la racine du repo
-cd ha
+cd /opt/kiwinet-services/ha
 
-# Premier démarrage
 docker compose up -d
-
-# Logs en temps réel
 docker compose logs -f homeassistant
 
 # Mise à jour
 docker compose pull && docker compose up -d
 ```
 
+---
+
 ## Premier démarrage
 
-1. HA crée son interface sur `http://localhost:8123`
-2. Créer le compte administrateur
-3. Ajouter dans `ha/config/configuration.yaml` :
+Home Assistant démarre sur `http://localhost:8123` (accès local uniquement).
+
+1. Créer le compte administrateur
+2. Ajouter dans `ha/config/configuration.yaml` :
 
 ```yaml
 http:
@@ -51,24 +54,22 @@ http:
     - 172.18.0.0/16   # Réseau proxy Traefik
 ```
 
-4. Redémarrer HA — `hub.kiwinet.me` est alors pleinement fonctionnel
+3. Redémarrer HA — `hub.kiwinet.me` est alors accessible
 
-## Structure
+---
 
-```
-ha/
-├── docker-compose.yml
-├── README.md
-├── config/                  # Données HA — gitignore
-└── mosquitto/
-    ├── config/
-    │   └── mosquitto.conf
-    ├── data/                # gitignore
-    └── log/                 # gitignore
-```
+## Points critiques
+
+**`network_mode: host`** — obligatoire pour la découverte mDNS (Google Cast, Chromecast, Nest Hub). Les labels Docker ne fonctionnent pas en mode host.
+
+**Route Traefik** — déclarée manuellement dans `../traefik/dynamic.yml`. L'upstream doit pointer vers la gateway du réseau `proxy` (pas `127.0.0.1`).
+
+**MQTT** — Mosquitto écoute sur le port 1883, accessible LAN uniquement.
+
+---
 
 ## Intégrations actives
 
-- **Google Cast** — Nest Audio, Nest Mini, Nest Hub, Google TV
-- **Plex** — via `plex.kiwinet.me`
-- **Mosquitto MQTT** — broker local pour capteurs IoT futurs
+- Google Cast (Nest Audio, Nest Mini, Nest Hub, Google TV)
+- Plex via `plex.kiwinet.me`
+- Mosquitto MQTT (broker local)

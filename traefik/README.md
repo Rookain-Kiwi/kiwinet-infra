@@ -1,17 +1,17 @@
-# traefik — Reverse Proxy
+# traefik — Reverse proxy
 
-Point d'entrée unique de la VM pour tout le trafic HTTP/HTTPS entrant.  
-Aucun service n'est exposé publiquement sans passer par ici.
+Point d'entrée unique de la VM. Aucun service n'est exposé publiquement sans passer par ici.
+
+> Contexte global : [kiwinet-docs](https://github.com/Rookain-Kiwi/kiwinet-docs)
 
 ---
 
 ## Rôle
 
-Traefik remplit trois fonctions :
-
-- **Reverse proxy HTTP/HTTPS** — routing vers les containers selon le domaine
-- **Gestion SSL automatique** — certificats Let's Encrypt via HTTP Challenge
-- **TCP passthrough** — Minecraft Java Edition sur le port 25565
+- Reverse proxy HTTP/HTTPS avec routing par domaine
+- Gestion SSL automatique via Let's Encrypt (HTTP Challenge)
+- TCP passthrough pour Minecraft (port 25565)
+- Création du réseau Docker `proxy`
 
 ---
 
@@ -19,27 +19,25 @@ Traefik remplit trois fonctions :
 
 ```
 traefik/
-├── docker-compose.yml  ← Démarrage du container + création du réseau proxy
-├── traefik.yml         ← Config statique (restart requis si modifié)
-├── dynamic.yml         ← Config dynamique (routers, services, middlewares)
-└── acme.json           ← Certificats Let's Encrypt (chmod 600, gitignored)
+├── docker-compose.yml
+├── traefik.yml         # Config statique — restart requis si modifié
+├── dynamic.yml         # Config dynamique — middlewares, routers natifs VM
+├── acme.json           # Certificats TLS (chmod 600, gitignored)
+└── .htpasswd           # Auth basic dashboard (gitignored)
 ```
 
 ---
 
 ## Déploiement
 
-Traefik doit démarrer en premier — il crée le réseau `proxy` dont tous les autres services dépendent.
-
 ```bash
-cd /opt/kiwinet-infra/traefik
+cd /opt/kiwinet-services/traefik
 
-# Premier démarrage
+# Permissions obligatoires avant premier démarrage
 chmod 600 acme.json
-docker compose up -d
 
-# Mise à jour image
-docker compose pull && docker compose up -d
+# Démarrage
+docker compose up -d
 
 # Après modification de traefik.yml
 docker compose restart
@@ -50,72 +48,52 @@ docker restart traefik
 
 ---
 
-## Config statique (`traefik.yml`)
+## Fichiers secrets à créer avant premier démarrage
 
-Chargée au démarrage — tout changement nécessite un restart du container.
+`acme.json` — fichier vide avec permissions strictes :
+```bash
+touch acme.json && chmod 600 acme.json
+```
 
-| Paramètre              | Valeur                          |
-|------------------------|---------------------------------|
-| Entrypoint HTTP        | `:80` (redirection → HTTPS)     |
-| Entrypoint HTTPS       | `:443`                          |
-| Entrypoint Minecraft   | `:25565` (TCP)                  |
-| SSL resolver           | Let's Encrypt HTTP Challenge    |
-| Docker provider        | `exposedByDefault: false`       |
-| Dashboard              | `traefik.kiwinet.me` (auth-basic) |
-
----
-
-## Config dynamique (`dynamic.yml`)
-
-Rechargée à chaud (`watch: true`) — en théorie. En pratique, un `docker restart traefik` reste nécessaire sur cette infrastructure.
-
-Contient :
-- **Middlewares** : `auth-basic`, `secure-headers`, `rate-limit`, `ha-forwardproto`
-- **Routers** : Home Assistant uniquement — les autres services (Plex, Minecraft…) utilisent des labels Docker ou le TCP passthrough
-- **Services** : upstream vers `172.18.0.1` (gateway réseau `proxy`) pour les services en `network_mode: host`
+`.htpasswd` — identifiants dashboard (bcrypt) :
+```bash
+htpasswd -nB <utilisateur> >> traefik/.htpasswd
+chmod 600 traefik/.htpasswd
+```
 
 ---
 
 ## Middlewares disponibles
 
-| Middleware              | Référence label               | Usage                       |
-|-------------------------|-------------------------------|-----------------------------|
-| `auth-basic@file`       | `middlewares=auth-basic@file` | Dashboard Traefik           |
-| `secure-headers@file`   | `middlewares=secure-headers@file` | Services publics        |
-| `rate-limit@file`       | `middlewares=rate-limit@file` | Endpoints publics           |
-| `ha-forwardproto@file`  | `middlewares=ha-forwardproto@file` | Home Assistant         |
+Définis dans `dynamic.yml`, référencés via `@file` depuis les labels Docker.
+
+| Middleware             | Usage                              |
+|------------------------|------------------------------------|
+| `auth-basic@file`      | Dashboard Traefik                  |
+| `secure-headers@file`  | Services publics                   |
+| `rate-limit@file`      | Endpoints publics                  |
+| `ha-forwardproto@file` | Home Assistant (X-Forwarded-Proto) |
 
 ---
 
-## acme.json
+## Points critiques
 
-Fichier critique — contient les clés privées des certificats TLS pour tous les domaines.
-
+**Rechargement `dynamic.yml` non fiable** — malgré `watch: true`, toujours redémarrer :
 ```bash
-# Permissions obligatoires
-chmod 600 traefik/acme.json
-
-# Ne jamais committer (vérifié dans .gitignore)
+docker restart traefik
 ```
 
-## .htpasswd
-
-Contient les identifiants hashés pour le middleware `auth-basic` (dashboard Traefik).  
-Gitignored — à créer manuellement sur la VM avant le premier démarrage.
-
-```bash
-# Créer le fichier et ajouter un utilisateur (bcrypt)
-htpasswd -nB <utilisateur> >> traefik/.htpasswd
-
-# Vérifier les permissions
-chmod 600 traefik/.htpasswd
+**Routing vers services en `network_mode: host`** — depuis un container, `127.0.0.1` pointe vers le container lui-même :
+```yaml
+# Ne fonctionne pas
+url: "http://127.0.0.1:8123"
+# Correct
+url: "http://172.18.0.1:8123"  # gateway réseau proxy
 ```
 
-En cas d'échec ACME (rate limit, NXDOMAIN), supprimer l'entrée défaillante avant de relancer :
-
+**Nettoyage `acme.json` après échec ACME** (rate limit : 5 tentatives/heure/domaine) :
 ```bash
 docker compose down
-
 python3 -c "
 import json
 with open('acme.json', 'r') as f:
@@ -129,20 +107,7 @@ with open('acme.json', 'w') as f:
     json.dump(data, f, indent=2)
 print('OK')
 "
-
 chmod 600 acme.json && docker compose up -d
 ```
 
----
-
-## Routing natif VM
-
-Pour les services en `network_mode: host` (Home Assistant) ou tournant nativement sur la VM, l'upstream doit utiliser l'IP gateway du réseau `proxy` :
-
-```yaml
-# Ne fonctionne pas depuis un container
-url: "http://127.0.0.1:8123"
-
-# Correct — vérifier avec : docker network inspect proxy | grep Gateway
-url: "http://172.18.0.1:8123"
-```
+**`dynamic.yml` — une seule section `http:`** — plusieurs sections provoquent des erreurs de parsing silencieuses.
