@@ -76,13 +76,18 @@ guest,uid=rookain,gid=rookain,vers=3.0,cache=strict,serverino,_netdev,x-systemd.
 
 ## Versions optimisées
 
-Plex peut générer des versions allégées des médias ("Optimized for TV, Optimized for Mobile, Original Quality, Personnalisé") pour faciliter le streaming à distance. Ces fichiers ne peuvent pas être écrits dans les bibliothèques source (montées en `:ro`) ni sur le disque VM (capacité insuffisante).
+Plex stocke peut générer des versions allégées des médias ("Optimized for TV, Optimized for Mobile, Original Quality, Personnalisé") pour faciliter le streaming à distance et directement dans l'arborescence des médias source, sans option de redirection dans l'interface.
 
-**Solution retenue :** stockage dans un sous-dossier dédié sur le NAS Freebox, monté en lecture/écriture et isolé des médias d'origine.
+Les bibliothèques Films et Séries TV sont donc montées en lecture/écriture.
+La bibliothèque Musique reste en `:ro` (pas de cas d'usage pour l'optimisation).
 
-| Volume conteneur   | Chemin VM                  | Droits |
-|--------------------|----------------------------|--------|
-| `/media/optimized` | `/mnt/Kodi/Plex-Optimized` | `rw`   |
+| Volume conteneur  | Droits | Raison                              |
+|-------------------|--------|-------------------------------------|
+| `/media/films`    | `rw`   | Versions optimisées Films           |
+| `/media/series`   | `rw`   | Versions optimisées Séries TV       |
+| `/media/musique`  | `:ro`  | Lecture seule — pas d'optimisation  |
+
+---
 
 ### Configuration post-déploiement (manuelle, une seule fois)
 
