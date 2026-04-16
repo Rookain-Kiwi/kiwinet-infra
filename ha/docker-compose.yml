@@ -27,7 +27,7 @@ services:
       - TZ=Europe/Paris
     volumes:
       - ./config:/config
-      - /mnt/Data/ha-backups:/config/backups
+      - /mnt/Data/Backups/ha-backups:/config/backups
       - /etc/localtime:/etc/localtime:ro
     # Santé vérifiée via curl — start_period élevé car HA met ~60s à initialiser complètement
     healthcheck:
