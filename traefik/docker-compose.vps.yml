@@ -16,6 +16,10 @@ services:
     container_name: traefik
     restart: unless-stopped
 
+    dns:
+      - 1.1.1.1   # Cloudflare — résolution DNS depuis le container (requis pour ACME)
+      - 8.8.8.8   # Google — fallback
+
     ports:
       - "80:80"     # HTTP → validation ACME + redirection HTTPS
       - "443:443"   # HTTPS → trafic SSL principal
