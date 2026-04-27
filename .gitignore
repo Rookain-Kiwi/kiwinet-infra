@@ -7,6 +7,7 @@
 
 # Certificats Let's Encrypt — régénérés automatiquement par Traefik
 traefik/acme.json
+traefik/acme.vps.json
 
 # Identifiants basic auth — générer avec : htpasswd -nB <utilisateur> >> traefik/.htpasswd
 traefik/.htpasswd
