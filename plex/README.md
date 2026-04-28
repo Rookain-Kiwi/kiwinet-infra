@@ -80,13 +80,23 @@ guest,uid=rookain,gid=rookain,file_mode=0777,dir_mode=0777,vers=3.0,cache=strict
 | `serverino`                    | Inodes stables — requis pour Plex                                                                                                                            |
 | `_netdev,x-systemd.automount`  | Montage différé au démarrage, après disponibilité réseau                                                                                                     |
 
+### Types de bibliothèques
+
+| Volume conteneur  | Type Plex   |
+|-------------------|-------------|
+| `/media/films`    | Films       |
+| `/media/series`   | Séries TV   |
+| `/media/musique`  | Musique     |
+| `/media/photos`   | Photos      |
+
 ### Droits par bibliothèque
 
-| Volume conteneur  | Droits | Raison                                    |
-|-------------------|--------|-------------------------------------------|
-| `/media/films`    | `rw`   | Écriture des versions optimisées          |
-| `/media/series`   | `rw`   | Écriture des versions optimisées          |
-| `/media/musique`  | `:ro`  | Lecture seule — pas de cas d'optimisation |
+| Volume conteneur  | Droits | Raison                                        |
+|-------------------|--------|-----------------------------------------------|
+| `/media/films`    | `rw`   | Écriture des versions optimisées              |
+| `/media/series`   | `rw`   | Écriture des versions optimisées              |
+| `/media/musique`  | `:ro`  | Lecture seule — pas de cas d'optimisation     |
+| `/media/photos`   | `:ro`  | Lecture seule — photos et vidéos famille      |
 
 ---
 
