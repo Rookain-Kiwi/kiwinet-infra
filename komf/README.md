@@ -31,12 +31,14 @@ Service de récupération automatique de métadonnées pour Komga. Interne uniqu
 ```
 komf/
 ├── docker-compose.yml
-└── .env                # API key Komga (gitignored)
+├── config/
+│   └── application.yml   # Configuration Komf (versionné)
+└── .env                  # API key Komga (gitignored)
 ```
 
 ---
 
-## Fichier `.env` à créer
+## Fichier `.env` à créer sur la VM
 
 ```bash
 cat > .env << 'EOF'
@@ -60,8 +62,8 @@ La clé API se génère dans Komga → **Mon Compte → Clés API**.
 ### Activer ComicVine
 
 1. Générer une clé API sur `https://comicvine.gamespot.com/api/`
-2. Ajouter dans `.env` : `KOMF_METADATA_PROVIDERS_COMIC_VINE_API_KEY=<clé>`
-3. Passer `KOMF_METADATA_PROVIDERS_DEFAULT_PROVIDERS_COMIC_VINE_ENABLED` à `"true"` dans le `docker-compose.yml`
+2. Ajouter `comicVineApiKey: "<clé>"` dans `config/application.yml`
+3. Passer `comicVine.enabled` à `true`
 
 ---
 

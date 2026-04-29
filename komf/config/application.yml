@@ -1,0 +1,43 @@
+komga:
+  baseUri: "http://komga:25600"
+  apiKey: ${KOMF_KOMGA_API_KEY}
+  eventListener:
+    enabled: true
+    # Écoute uniquement la bibliothèque Mangas
+    # ID Bandes Dessinées : 0Q7MZDD9YFTCG (géré par BedethequeKomga)
+    libraryFilter:
+      - "0Q7MZKV1AFR66"
+  updateModes:
+    - API
+    - COMIC_INFO
+
+database:
+  file: /config/database.sqlite
+
+metadataProviders:
+  defaultProviders:
+    mangaUpdates:
+      priority: 10
+      enabled: true
+    aniList:
+      priority: 20
+      enabled: true
+    mangaDex:
+      priority: 30
+      enabled: true
+      coverLanguages:
+        - "fr"
+        - "en"
+        - "ja"
+    mal:
+      priority: 40
+      enabled: false
+    comicVine:
+      # Activer avec comicVineApiKey quand une clé sera disponible
+      priority: 50
+      enabled: false
+
+server:
+  port: 8085
+
+logLevel: INFO
