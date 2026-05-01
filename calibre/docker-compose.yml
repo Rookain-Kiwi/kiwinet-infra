@@ -7,17 +7,19 @@
 #
 # Architecture bibliothèque :
 #   - metadata.db   → ./config (bind mount local VM, hors CIFS)
-#   - Fichiers EPUB → /mnt/Kodi/Lecture/Livres (CIFS, lecture seule)
+#   - Fichiers EPUB → /mnt/Kodi/Lecture/Livres (CIFS, lecture/écriture)
 #
 # ⚠️  Le CIFS (SMB) est incompatible avec le locking exclusif SQLite.
 #     La base Calibre ne peut pas résider sur le NAS Freebox.
 #     "Separate Book Files from Library" doit être activé dans l'interface.
+#     Les fichiers ebooks sont en lecture/écriture pour permettre l'import
+#     et l'organisation de l'arborescence par Calibre-Web.
 ###############################################################################
 services:
   # ───────────────────────────────────────────────────────────────────────────
   # CALIBRE-WEB : Interface web pour bibliothèque Calibre (EPUB, PDF, MOBI)
   # Base de données SQLite dans ./config (local VM, persistant hors CIFS)
-  # Fichiers ebooks sur NAS Freebox (CIFS) en lecture seule
+  # Fichiers ebooks sur NAS Freebox (CIFS) en lecture/écriture
   # DOCKER_MODS active Calibre en arrière-plan pour la conversion de formats
   # ───────────────────────────────────────────────────────────────────────────
   calibre-web:
@@ -37,10 +39,11 @@ services:
       # Configuration et base de données SQLite (local VM — jamais sur CIFS)
       # Persiste entre les recreations du conteneur (bind mount, pas volume nommé)
       - ./config:/config
-      # Fichiers ebooks sur NAS Freebox — lecture seule
+      # Fichiers ebooks sur NAS Freebox — lecture/écriture
       # ⚠️  Le mount CIFS /mnt/Kodi doit être actif sur la VM (via Ansible)
       # ⚠️  "Separate Book Files from Library" doit être activé dans l'interface
-      - /mnt/Kodi/Lecture/Livres:/books:ro
+      # ⚠️  Le metadata.db Calibre ne doit PAS résider ici (incompatibilité CIFS/SQLite)
+      - /mnt/Kodi/Lecture/Livres:/books
 
     networks:
       - proxy
@@ -50,6 +53,7 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.calibre-web.rule=Host(`calibre.kiwinet.me`)"
       - "traefik.http.routers.calibre-web.entrypoints=websecure"
+      - "traefik.http.routers.calibre-web.tls.certresolver=letsencrypt"
       - "traefik.http.services.calibre-web.loadbalancer.server.port=8083"
       - "traefik.http.routers.calibre-web.middlewares=secure-headers@file"
 
