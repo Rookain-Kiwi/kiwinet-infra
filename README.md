@@ -44,6 +44,8 @@ kiwinet-services/
 │   │   ├── application.yml           # Config Komf (non versionné, contient credentials)
 │   │   └── application.yml.template  # Template versionné avec placeholders
 │   └── .env                          # Fichier vide requis
+├── jellyfin/                   # Test de cohabitation avec Plex — accès local uniquement
+│   └── docker-compose.yml
 └── bedetheque-komga/           # Chemin VM : /opt/kiwinet-services/bedetheque-komga/
 ```
 
@@ -62,6 +64,7 @@ cd minecraft    && docker compose up -d
 cd ha           && docker compose up -d
 cd komga        && docker compose up -d
 cd komf         && docker compose up -d
+cd jellyfin     && docker compose up -d
 ```
 
 ---
@@ -90,3 +93,4 @@ cd <service> && docker compose up -d --force-recreate
 | Home Assistant + Mosquitto | `ha/`               | `hub.kiwinet.me`              | [ha/README.md](./ha/README.md)                     |
 | Komga                      | `komga/`            | `komga.kiwinet.me`            | [komga/README.md](./komga/README.md)               |
 | Komf                       | `komf/`             | interne (`172.18.0.x:8085`)   | [komf/README.md](./komf/README.md)                 |
+| Jellyfin (test)            | `jellyfin/`         | LAN/VPN uniquement (`:8096`)  | [jellyfin/README.md](./jellyfin/README.md)         |

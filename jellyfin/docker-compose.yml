@@ -1,0 +1,67 @@
+###############################################################################
+# jellyfin/docker-compose.yml : Serveur Jellyfin (test de cohabitation avec Plex)
+# Projet  : kiwinet.me
+# VM      : Debian 13.3 ARM AArch64 (Freebox Delta)
+# Image   : lscr.io/linuxserver/jellyfin (arm64v8) — l'image officielle
+#           jellyfin/jellyfin n'a pas d'accélération matérielle sur ARM,
+#           LinuxServer.io est l'image recommandée par la doc officielle
+#           Jellyfin pour ce cas (aucune perte, puisque ce SoC n'a de toute
+#           façon pas de VPU supportée — cf. Rockchip RK3588 uniquement).
+# Accès   : LOCAL UNIQUEMENT pour l'instant — pas de route Traefik publique.
+#           http://<ip-lan-vm>:8096 (LAN direct, ou via VPN WireGuard existant)
+#           ⚠️  Ne PAS ouvrir ce port côté WAN sur la Freebox Delta
+###############################################################################
+services:
+  # ───────────────────────────────────────────────────────────────────────────
+  # JELLYFIN : Media Server — cohabitation testée avec Plex avant décision
+  # Bibliothèques en lecture seule depuis le NAS Freebox (CIFS), en miroir
+  # des bibliothèques Plex existantes (hors Photos, jugé secondaire pour
+  # cette migration potentielle — cf. échange du 05/09/2026)
+  # ───────────────────────────────────────────────────────────────────────────
+  jellyfin:
+    image: lscr.io/linuxserver/jellyfin:latest
+    container_name: jellyfin
+    restart: unless-stopped
+    security_opt:
+      # AppArmor non disponible sur ce kernel ARM (Freebox Delta)
+      # Nécessaire à la recréation du container — transparent au restart
+      - apparmor:unconfined
+    ports:
+      # Exposition LAN directe uniquement — accès via IP locale ou VPN
+      # WireGuard existant. Pas de label Traefik tant que le test n'est
+      # pas validé (cf. décision du 05/09/2026 : accès local pour commencer)
+      - "8096:8096"
+      # Découverte auto des clients sur le réseau local (LAN uniquement,
+      # sans impact WAN) — équivalent fonctionnel au GDM de Plex
+      - "7359:7359/udp"
+    environment:
+      TZ: "Europe/Paris"
+      # UID/GID pour la propriété des fichiers du volume jellyfin-config
+      # Vérifier avec `id rookain` sur la VM et ajuster si besoin
+      PUID: "1000"
+      PGID: "1000"
+    volumes:
+      # Configuration, métadonnées, base de données — volume nommé
+      # (contrairement à Plex, pas de données natives à réutiliser ici)
+      - jellyfin-config:/config
+      # Médias sur NAS Freebox (montages CIFS persistants via /etc/fstab)
+      # Lecture seule : Jellyfin ne doit jamais modifier les fichiers source
+      - /mnt/Libraries/TV Shows:/data/tvshows:ro
+      - /mnt/Libraries/Movies:/data/movies:ro
+      - /mnt/Libraries/Music:/data/music:ro
+    networks:
+      - proxy
+
+# ─────────────────────────────────────────────────────────────────────────────
+# RÉSEAUX
+# ─────────────────────────────────────────────────────────────────────────────
+networks:
+  proxy:
+    external: true
+
+# ─────────────────────────────────────────────────────────────────────────────
+# VOLUMES
+# jellyfin-config : données persistantes (config, métadonnées, cache interne)
+# ─────────────────────────────────────────────────────────────────────────────
+volumes:
+  jellyfin-config:
