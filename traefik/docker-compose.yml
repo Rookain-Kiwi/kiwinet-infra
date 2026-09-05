@@ -23,7 +23,6 @@ services:
     ports:
       - "80:80"       # HTTP → redirigé vers HTTPS + HTTP Challenge Let's Encrypt
       - "443:443"     # HTTPS → trafic SSL principal
-      - "25565:25565" # TCP → Minecraft Java Edition (passthrough)
 
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro  # API Docker — découverte automatique des services

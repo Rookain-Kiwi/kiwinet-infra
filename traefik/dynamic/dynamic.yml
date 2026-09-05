@@ -80,25 +80,3 @@ http:
   serversTransports:
     retroarch-transport:
       insecureSkipVerify: true
-# ─────────────────────────────────────────────────────────────────────────────
-# TCP : Services non-HTTP routés en passthrough
-# ─────────────────────────────────────────────────────────────────────────────
-tcp:
-  routers:
-
-    # Minecraft Java Edition : TCP brut, pas de TLS Traefik
-    # Le client Minecraft gère son propre protocole de connexion
-    minecraft:
-      rule: "HostSNI(`*`)"
-      entryPoints:
-        - minecraft
-      service: minecraft
-
-  services:
-
-    # Minecraft : IP fixe 172.18.0.10 assignée dans minecraft/docker-compose.yml
-    # IP statique pour éviter les dérives après redémarrage du conteneur
-    minecraft:
-      loadBalancer:
-        servers:
-          - address: "172.18.0.10:25565"
