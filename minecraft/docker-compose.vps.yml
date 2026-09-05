@@ -1,0 +1,68 @@
+###############################################################################
+# minecraft/docker-compose.vps.yml : Serveur Minecraft Java Edition — VPS Scaleway
+# Projet  : kiwinet.me
+# Cible   : VPS Scaleway (x86_64, fr-par-1)
+# Image   : itzg/minecraft-server (multi-arch, linux/amd64)
+# Accès   : minecraft.kiwinet.me:25565 (TCP brut via Traefik passthrough)
+###############################################################################
+
+services:
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # MINECRAFT : Serveur Java Edition (Vanilla) avec RCON activé
+  # TCP brut routé via Traefik en passthrough sur le port 25565
+  # Résolution par nom de container sur le réseau proxy (pas d'IP fixe :
+  # le VPS ne définit pas de subnet figé pour ce réseau, contrairement à la VM)
+  # ───────────────────────────────────────────────────────────────────────────
+  minecraft:
+    image: itzg/minecraft-server:latest
+    container_name: minecraft
+    restart: unless-stopped
+    environment:
+      # Acceptation EULA Mojang — obligatoire
+      EULA: "TRUE"
+      # Vanilla — PaperMC non retenu (serveur privé sans plugins)
+      TYPE: "VANILLA"
+      # LATEST : bascule automatiquement vers la dernière version stable
+      # à chaque redémarrage du container (jamais les snapshots/preview)
+      VERSION: "LATEST"
+      MEMORY: "2G"
+      TZ: "Europe/Paris"
+      # Applique les variables ci-dessous sur server.properties à chaque démarrage
+      OVERRIDE_SERVER_PROPERTIES: "true"
+      # Paramètres server.properties
+      DIFFICULTY: "normal"
+      GAMEMODE: "survival"
+      MAX_PLAYERS: "6"
+      WHITE_LIST: "true"
+      ENFORCE_WHITELIST: "true"
+      MOTD: "§2Bienvenue sur le serveur privé!"
+      LEVEL: "kiwinet"
+      # RCON : accès console à distance sans entrer dans le conteneur
+      ENABLE_RCON: "true"
+      RCON_PASSWORD: ${RCON_PASSWORD}
+      RCON_PORT: "25575"
+      # Plugins téléchargés automatiquement depuis Modrinth au démarrage
+      MODRINTH_PROJECTS: ""
+    volumes:
+      - minecraft-data:/data
+    networks:
+      - proxy
+    labels:
+      # HTTP Traefik désactivé — le routage Minecraft passe par TCP passthrough (dynamic.vps.yml)
+      - "traefik.enable=false"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# RÉSEAUX
+# ─────────────────────────────────────────────────────────────────────────────
+networks:
+  proxy:
+    external: true
+
+# ─────────────────────────────────────────────────────────────────────────────
+# VOLUMES
+# ─────────────────────────────────────────────────────────────────────────────
+volumes:
+  minecraft-data:
+    name: minecraft_minecraft-data
+    external: true

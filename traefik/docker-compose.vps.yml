@@ -21,8 +21,9 @@ services:
       - 8.8.8.8   # Google — fallback
 
     ports:
-      - "80:80"     # HTTP → validation ACME + redirection HTTPS
-      - "443:443"   # HTTPS → trafic SSL principal
+      - "80:80"       # HTTP → validation ACME + redirection HTTPS
+      - "443:443"     # HTTPS → trafic SSL principal
+      - "25565:25565" # TCP → Minecraft Java Edition (passthrough)
 
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro       # API Docker — découverte automatique des services

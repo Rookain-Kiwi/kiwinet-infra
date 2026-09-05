@@ -54,3 +54,26 @@ http:
       loadBalancer:
         servers:
           - url: "http://kiwinet-web:80"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# TCP : Services non-HTTP routés en passthrough
+# ─────────────────────────────────────────────────────────────────────────────
+tcp:
+  routers:
+
+    # Minecraft Java Edition : TCP brut, pas de TLS Traefik
+    # Le client Minecraft gère son propre protocole de connexion
+    minecraft:
+      rule: "HostSNI(`*`)"
+      entryPoints:
+        - minecraft
+      service: minecraft
+
+  services:
+
+    # Minecraft : résolution par nom de container sur le réseau proxy
+    # (pas d'IP fixe côté VPS, contrairement à la VM)
+    minecraft:
+      loadBalancer:
+        servers:
+          - address: "minecraft:25565"
