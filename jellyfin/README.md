@@ -24,7 +24,7 @@ Lifetime (juillet 2026). Accès **local uniquement** pour cette phase.
 | Image          | LinuxServer.io (recommandée par la doc Jellyfin pour ARM, pas d'accélération matérielle disponible sur ce SoC de toute façon) |
 | Données config | Volume nommé `jellyfin-config`                              |
 | Bibliothèques  | `/mnt/Libraries/{TV Shows,Movies,Music}` → `/data/*` (CIFS, `:ro`) |
-| Accès          | LAN direct / VPN WireGuard uniquement — **aucune route Traefik publique pour l'instant** |
+| Accès          | `jellyfin.kiwinet.me` (HTTPS/Traefik, public) + LAN direct sur `:8096` |
 
 ---
 
@@ -68,17 +68,20 @@ transcodage sera lent dans les deux cas.
 
 ---
 
-## Accès distant — non activé pour cette phase
+## Accès distant — activé (décision du 06/09/2026)
 
-Pas de route Traefik/DNS publique tant que le test n'est pas concluant.
-Options à trancher plus tard, par cohérence avec l'approche déjà retenue pour
-`freebox.kiwinet.me` (décoy DNS passif, accès réel via VPN uniquement) :
+Route Traefik publique `jellyfin.kiwinet.me` activée, même posture que
+Plex/Komga. Choix assumé après validation de la phase de test local :
+priorité donnée à la simplicité d'accès pour les enfants en déplacement,
+au prix d'une surface d'attaque équivalente à celle déjà acceptée pour Plex
+(pas de saut qualitatif de risque, juste un renoncement à l'avantage
+"VPN uniquement" qui avait été envisagé initialement).
 
-- **VPN WireGuard existant** (recommandé) : pas d'exposition supplémentaire,
-  cohérent avec la posture sécurité actuelle du homelab.
-- **Route Traefik publique** (`jellyfin.kiwinet.me`), comme Plex/Komga :
-  plus simple pour les enfants en déplacement, mais surface d'attaque
-  supplémentaire à assumer — à activer uniquement après validation du test.
+Pré-requis pour que le certificat Let's Encrypt (challenge HTTP) fonctionne :
+- Enregistrement DNS `jellyfin.kiwinet.me` pointant vers la même cible que
+  `plex.kiwinet.me` (à créer chez Bluehost si pas déjà fait)
+- Port 80/443 déjà ouvert côté ufw et déjà forwardé côté Freebox pour les
+  autres services Traefik — aucun changement réseau supplémentaire requis
 
 ---
 

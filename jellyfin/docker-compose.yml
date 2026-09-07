@@ -7,9 +7,9 @@
 #           LinuxServer.io est l'image recommandée par la doc officielle
 #           Jellyfin pour ce cas (aucune perte, puisque ce SoC n'a de toute
 #           façon pas de VPU supportée — cf. Rockchip RK3588 uniquement).
-# Accès   : LOCAL UNIQUEMENT pour l'instant — pas de route Traefik publique.
-#           http://<ip-lan-vm>:8096 (LAN direct, ou via VPN WireGuard existant)
-#           ⚠️  Ne PAS ouvrir ce port côté WAN sur la Freebox Delta
+# Accès   : jellyfin.kiwinet.me (HTTPS via Traefik → port 8096 interne)
+#           + LAN direct sur port 8096 (découverte auto-discovery clients locaux)
+#           Décision du 06/09/2026 : passage en accès public, même posture que Plex
 ###############################################################################
 services:
   # ───────────────────────────────────────────────────────────────────────────
@@ -51,6 +51,15 @@ services:
       - /mnt/Libraries/Music:/data/music:ro
     networks:
       - proxy
+    labels:
+      # Exposition HTTPS via Traefik : certificat Let's Encrypt + middleware secure-headers
+      # Le port interne 8096 est résolu par le label loadbalancer.server.port
+      - "traefik.enable=true"
+      - "traefik.http.routers.jellyfin.rule=Host(`jellyfin.kiwinet.me`)"
+      - "traefik.http.routers.jellyfin.entrypoints=websecure"
+      - "traefik.http.routers.jellyfin.tls.certresolver=letsencrypt"
+      - "traefik.http.services.jellyfin.loadbalancer.server.port=8096"
+      - "traefik.http.routers.jellyfin.middlewares=secure-headers@file"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # RÉSEAUX
