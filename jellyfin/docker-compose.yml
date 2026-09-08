@@ -2,11 +2,11 @@
 # jellyfin/docker-compose.yml : Serveur Jellyfin
 # Projet  : kiwinet.me
 # VM      : Debian 13.3 ARM AArch64 (Freebox Delta)
-# Image   : lscr.io/linuxserver/jellyfin (arm64v8) — l'image officielle
-#           jellyfin/jellyfin n'a pas d'accélération matérielle sur ARM,
-#           LinuxServer.io est l'image recommandée par la doc officielle
-#           Jellyfin pour ce cas (aucune perte, puisque ce SoC n'a de toute
-#           façon pas de VPU supportée — cf. Rockchip RK3588 uniquement).
+# Image   : jellyfin/jellyfin (officielle) — bascule du 08/09/2026 depuis
+#           LinuxServer.io pour bénéficier de Jellyfin 12.0 dès sa sortie
+#           (LSIO n'avait pas encore republié son image au moment du switch).
+#           Aucune perte d'accélération matérielle dans un sens ou l'autre :
+#           ce SoC ARM (Marvell Cortex-A72) n'en a jamais eu de toute façon.
 # Accès   : jellyfin.kiwinet.me (HTTPS via Traefik → port 8096 interne)
 #           + LAN direct sur port 8096 (découverte auto-discovery clients locaux)
 ###############################################################################
@@ -14,14 +14,16 @@ services:
   # ───────────────────────────────────────────────────────────────────────────
   # JELLYFIN : Media Server — remplace Plex depuis le 07/09/2026
   # Bibliothèques en lecture seule depuis le NAS Freebox (CIFS)
-  # Photos et Books ajoutés le 08/09/2026 à titre exploratoire (évaluation
-  # des fonctions "Vidéos et photos personnelles" / "Livres" — Komga reste
-  # en place pour les comics/mangas tant que le résultat n'est pas concluant)
+  # Photos et Books évalués avec succès (08/09/2026) — Komga toujours en
+  # place en parallèle, décision finale en attente du résultat sur 12.0
   # ───────────────────────────────────────────────────────────────────────────
   jellyfin:
-    image: lscr.io/linuxserver/jellyfin:latest
+    image: jellyfin/jellyfin:latest
     container_name: jellyfin
     restart: unless-stopped
+    # Image officielle : pas de PUID/PGID (spécifique à LinuxServer.io),
+    # on impose directement l'UID/GID du conteneur via Docker
+    user: "1000:1000"
     security_opt:
       # AppArmor non disponible sur ce kernel ARM (Freebox Delta)
       # Nécessaire à la recréation du container — transparent au restart
@@ -34,20 +36,15 @@ services:
       - "7359:7359/udp"
     environment:
       TZ: "Europe/Paris"
-      # UID/GID pour la propriété des fichiers du volume jellyfin-config
-      # Vérifier avec `id rookain` sur la VM et ajuster si besoin
-      PUID: "1000"
-      PGID: "1000"
     volumes:
-      # Configuration, métadonnées, base de données — volume nommé
-      # (contrairement à Plex, pas de données natives à réutiliser ici)
+      # Configuration, métadonnées, base de données — MÊME volume nommé
+      # que sous LinuxServer.io, aucune migration de données nécessaire
       - jellyfin-config:/config
       # Médias sur NAS Freebox (montages CIFS persistants via /etc/fstab)
       # Lecture seule : Jellyfin ne doit jamais modifier les fichiers source
       - /mnt/Libraries/TV Shows:/data/tvshows:ro
       - /mnt/Libraries/Movies:/data/movies:ro
       - /mnt/Libraries/Music:/data/music:ro
-      # Exploratoire (08/09/2026) — cf. note en tête de service
       - /mnt/Libraries/Photos:/data/photos:ro
       - /mnt/Libraries/Books:/data/books:ro
     networks:
