@@ -36,6 +36,15 @@ services:
       - "7359:7359/udp"
     environment:
       TZ: "Europe/Paris"
+      # Chemins forcés pour correspondre à la structure existante du volume
+      # (héritée de LinuxServer.io, fichiers à la racine de /config, pas
+      # dans un sous-dossier /config/config comme l'attend l'image
+      # officielle par défaut). Sans ça, Jellyfin 12.0 ne retrouve pas
+      # system.xml/network.xml/users et réinitialise une config vierge.
+      JELLYFIN_CONFIG_DIR: "/config"
+      JELLYFIN_DATA_DIR: "/config"
+      JELLYFIN_CACHE_DIR: "/config/cache"
+      JELLYFIN_LOG_DIR: "/config/log"
     volumes:
       # Configuration, métadonnées, base de données — MÊME volume nommé
       # que sous LinuxServer.io, aucune migration de données nécessaire
