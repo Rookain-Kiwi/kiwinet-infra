@@ -42,7 +42,7 @@ services:
       # officielle par défaut). Sans ça, Jellyfin 12.0 ne retrouve pas
       # system.xml/network.xml/users et réinitialise une config vierge.
       JELLYFIN_CONFIG_DIR: "/config"
-      JELLYFIN_DATA_DIR: "/config"
+      JELLYFIN_DATA_DIR: "/config/data"
       JELLYFIN_CACHE_DIR: "/config/cache"
       JELLYFIN_LOG_DIR: "/config/log"
     volumes:
