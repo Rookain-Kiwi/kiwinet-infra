@@ -1,5 +1,5 @@
 ###############################################################################
-# jellyfin/docker-compose.yml : Serveur Jellyfin (test de cohabitation avec Plex)
+# jellyfin/docker-compose.yml : Serveur Jellyfin
 # Projet  : kiwinet.me
 # VM      : Debian 13.3 ARM AArch64 (Freebox Delta)
 # Image   : lscr.io/linuxserver/jellyfin (arm64v8) — l'image officielle
@@ -9,14 +9,14 @@
 #           façon pas de VPU supportée — cf. Rockchip RK3588 uniquement).
 # Accès   : jellyfin.kiwinet.me (HTTPS via Traefik → port 8096 interne)
 #           + LAN direct sur port 8096 (découverte auto-discovery clients locaux)
-#           Décision du 06/09/2026 : passage en accès public, même posture que Plex
 ###############################################################################
 services:
   # ───────────────────────────────────────────────────────────────────────────
-  # JELLYFIN : Media Server — cohabitation testée avec Plex avant décision
-  # Bibliothèques en lecture seule depuis le NAS Freebox (CIFS), en miroir
-  # des bibliothèques Plex existantes (hors Photos, jugé secondaire pour
-  # cette migration potentielle — cf. échange du 05/09/2026)
+  # JELLYFIN : Media Server — remplace Plex depuis le 07/09/2026
+  # Bibliothèques en lecture seule depuis le NAS Freebox (CIFS)
+  # Photos et Books ajoutés le 08/09/2026 à titre exploratoire (évaluation
+  # des fonctions "Vidéos et photos personnelles" / "Livres" — Komga reste
+  # en place pour les comics/mangas tant que le résultat n'est pas concluant)
   # ───────────────────────────────────────────────────────────────────────────
   jellyfin:
     image: lscr.io/linuxserver/jellyfin:latest
@@ -27,9 +27,7 @@ services:
       # Nécessaire à la recréation du container — transparent au restart
       - apparmor:unconfined
     ports:
-      # Exposition LAN directe uniquement — accès via IP locale ou VPN
-      # WireGuard existant. Pas de label Traefik tant que le test n'est
-      # pas validé (cf. décision du 05/09/2026 : accès local pour commencer)
+      # Exposition LAN directe — accès via IP locale ou VPN WireGuard
       - "8096:8096"
       # Découverte auto des clients sur le réseau local (LAN uniquement,
       # sans impact WAN) — équivalent fonctionnel au GDM de Plex
@@ -49,6 +47,9 @@ services:
       - /mnt/Libraries/TV Shows:/data/tvshows:ro
       - /mnt/Libraries/Movies:/data/movies:ro
       - /mnt/Libraries/Music:/data/music:ro
+      # Exploratoire (08/09/2026) — cf. note en tête de service
+      - /mnt/Libraries/Photos:/data/photos:ro
+      - /mnt/Libraries/Books:/data/books:ro
     networks:
       - proxy
     labels:
